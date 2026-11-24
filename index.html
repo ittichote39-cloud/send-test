@@ -1,0 +1,136 @@
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SEND TEST</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  max-width: 550px;
+  margin: 30px auto;
+  padding: 20px;
+}
+input {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0 18px;
+  box-sizing: border-box;
+}
+button {
+  width: 100%;
+  padding: 14px;
+  background: #06c755;
+  color: white;
+  border: 0;
+  border-radius: 8px;
+  font-size: 17px;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<h2>ส่งภาพพร้อมลิงก์ YouTube</h2>
+
+<p>URL รูปภาพ</p>
+<input id="image" placeholder="https://.../image.jpg">
+
+<p>URL YouTube</p>
+<input id="youtube" placeholder="https://www.youtube.com/watch?v=...">
+
+<button onclick="sendImage()">ส่งรูปผ่าน LINE</button>
+
+<p id="status"></p>
+
+<script>
+
+// ใส่ LIFF ID ของคุณภายหลัง
+const LIFF_ID = "ใส่_LIFF_ID";
+
+async function start() {
+  try {
+    await liff.init({ liffId: LIFF_ID });
+
+    if (!liff.isLoggedIn()) {
+      liff.login();
+      return;
+    }
+
+    document.getElementById("status").innerText =
+      "พร้อมใช้งาน";
+  } catch (e) {
+    document.getElementById("status").innerText =
+      "เกิดข้อผิดพลาด: " + e.message;
+  }
+}
+
+async function sendImage() {
+
+  const image = document.getElementById("image").value.trim();
+  const youtube = document.getElementById("youtube").value.trim();
+
+  try {
+    const imgURL = new URL(image);
+    const ytURL = new URL(youtube);
+
+    if (imgURL.protocol !== "https:") {
+      throw new Error("URL รูปภาพต้องเป็น HTTPS");
+    }
+
+    if (!["youtube.com", "www.youtube.com",
+          "m.youtube.com", "youtu.be"].includes(ytURL.hostname)) {
+      throw new Error("กรุณาใส่ URL YouTube");
+    }
+
+    if (!liff.isInClient()) {
+      throw new Error("กรุณาเปิด LIFF ผ่านแอป LINE");
+    }
+
+    if (!liff.isApiAvailable("shareTargetPicker")) {
+      throw new Error("Share Target Picker ยังไม่ได้เปิดใช้งาน");
+    }
+
+    const flexMessage = {
+      type: "flex",
+      altText: "วิดีโอ YouTube",
+      contents: {
+        type: "bubble",
+        size: "giga",
+        hero: {
+          type: "image",
+          url: image,
+          size: "full",
+          aspectRatio: "1:1",
+          aspectMode: "cover",
+          action: {
+            type: "uri",
+            label: "เปิด YouTube",
+            uri: youtube
+          }
+        }
+      }
+    };
+
+    const result = await liff.shareTargetPicker(
+      [flexMessage],
+      { isMultiple: false }
+    );
+
+    document.getElementById("status").innerText =
+      result ? "ส่งสำเร็จ!" : "ยกเลิกการส่ง";
+
+  } catch (e) {
+    document.getElementById("status").innerText =
+      "ไม่สำเร็จ: " + e.message;
+  }
+}
+
+start();
+
+</script>
+</body>
+</html>
